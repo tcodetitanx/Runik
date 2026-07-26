@@ -1,0 +1,22 @@
+# Unreal Engine generated
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Packaged/
+Build/Receipts/
+.vs/
+.vscode/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Local test build outputs
+Tests/bin/
+
+# OS
+Thumbs.db
+Desktop.ini
