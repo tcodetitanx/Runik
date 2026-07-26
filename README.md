@@ -56,11 +56,9 @@ docs/                     design, story bible, Steam checklist
 The whole game boots from the engine's empty Entry map; everything (board,
 menus, campaign) is Slate spawned by `ARunikGameMode`.
 
-> Note: the core simulation, puzzles and GIF encoder are fully machine-tested
-> on the plain VS toolchain (see below). The UE-side module was written against
-> the UE 5.x Slate/Engine API but has not yet been compiled on this machine -
-> the dev box only had a partial engine install. Expect at most minor
-> include/API touch-ups on first build.
+> The core simulation, puzzles and GIF encoder are machine-tested on the plain
+> VS toolchain (see below), and the full module builds clean against
+> **UE 5.8.0** (both `RunikEditor` and the standalone `Runik` target).
 
 ## Tests (no Unreal required)
 

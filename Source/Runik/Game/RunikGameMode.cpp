@@ -1,5 +1,5 @@
-#include "RunikGameMode.h"
-#include "Runik.h"
+﻿#include "RunikGameMode.h"
+#include "../Runik.h"
 #include "RunikGameInstance.h"
 #include "../UI/SRunikRoot.h"
 #include "Engine/GameViewportClient.h"

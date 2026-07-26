@@ -1,5 +1,5 @@
-#include "RunikSave.h"
-#include "Runik.h"
+﻿#include "RunikSave.h"
+#include "../Runik.h"
 #include "../Core/RunikPuzzles.h"
 #include "Dom/JsonObject.h"
 #include "Misc/FileHelper.h"
@@ -64,7 +64,7 @@ void FRunikSave::Load()
 					Prog.SavedSolution.push_back(Pl);
 				}
 			}
-			Progress.Add(Pair.Key, MoveTemp(Prog));
+			Progress.Add(FString(Pair.Key), MoveTemp(Prog));
 		}
 	}
 }

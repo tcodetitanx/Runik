@@ -1,5 +1,5 @@
-#include "RunikGif.h"
-#include "Runik.h"
+﻿#include "RunikGif.h"
+#include "../Runik.h"
 #include "RunikAssets.h"
 #include "Misc/FileHelper.h"
 
