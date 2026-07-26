@@ -60,8 +60,8 @@ is decoration."
 
 ## Naming notes
 
-- Rune meanings follow the Elder Futhark: Nauthiz (need), Thurisaz (giant's
-  force), Raidho (ride/journey), Gebo (gift), Kenaz (torch), Dagaz (day,
-  transformation).
+- Rune meanings follow the Elder Futhark: Laguz (water/lake, that which
+  draws), Thurisaz (giant's force), Raidho (ride/journey), Gebo (gift),
+  Kenaz (torch), Dagaz (day, transformation).
 - "Sunwise / widdershins" - traditional terms for clockwise / counter-
   clockwise ritual motion; they encode the plane-dependent orbit direction.

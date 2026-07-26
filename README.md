@@ -14,7 +14,7 @@ puzzle demands, then compete against par on cost, ticks and rune count.
 
 | Rune | Glyph | Effect |
 | --- | --- | --- |
-| Pull | Nauthiz ᚾ | Draws the first thing on each of its six axes (range 3) one hex closer each tick; holds fast whatever stands beside it. |
+| Pull | Laguz ᛚ | Draws the first thing on each of its six axes (range 3) one hex closer each tick; holds fast whatever stands beside it. |
 | Push | Thurisaz ᚦ | Everything adjacent moves one hex directly away. |
 | Orbit | Raidho ᚱ | Everything adjacent rotates around it - **sunwise** on the Material plane, **widdershins** on the Ethereal. |
 | Fuse | Gebo ᚷ | After movement, adjacent entities that touch each other are bonded into one rigid compound. |

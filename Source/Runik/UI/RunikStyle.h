@@ -13,7 +13,7 @@ inline const FLinearColor Azure(0.35f, 0.75f, 1.00f, 1.0f);     // ethereal rune
 inline const FLinearColor Parchment(0.88f, 0.83f, 0.72f, 1.0f); // body text
 inline const FLinearColor Dim(0.55f, 0.52f, 0.47f, 1.0f);
 inline const FLinearColor PanelBg(0.045f, 0.045f, 0.06f, 0.94f);
-inline const FLinearColor BoardBg(0.09f, 0.09f, 0.11f, 1.0f);
+inline const FLinearColor BoardBg(0.0f, 0.0f, 0.0f, 1.0f);
 inline const FLinearColor Danger(0.9f, 0.35f, 0.3f, 1.0f);
 inline const FLinearColor Ok(0.55f, 0.85f, 0.45f, 1.0f);
 
@@ -22,18 +22,19 @@ inline FSlateFontInfo Font(int32 Size, bool bBold = false)
 	return FCoreStyle::GetDefaultFontStyle(bBold ? "Bold" : "Regular", Size);
 }
 
-// Flat-top hex layout used by every screen that draws the board.
+// Pointy-top hex layout (matches the hex tile and gem medallion art).
+// Size is the circumradius: a tile is RootThree*Size wide and 2*Size tall.
 constexpr float RootThree = 1.7320508f;
 
 inline FVector2D HexToPixel(int32 Q, int32 R, float Size)
 {
-	return FVector2D(1.5f * Size * Q, RootThree * Size * (R + Q * 0.5f));
+	return FVector2D(RootThree * Size * (Q + R * 0.5f), 1.5f * Size * R);
 }
 
 inline void PixelToHex(const FVector2D& P, float Size, int32& OutQ, int32& OutR)
 {
-	const float FQ = P.X / (1.5f * Size);
-	const float FR = P.Y / (RootThree * Size) - FQ * 0.5f;
+	const float FR = P.Y / (1.5f * Size);
+	const float FQ = P.X / (RootThree * Size) - FR * 0.5f;
 	// cube rounding
 	const float FS = -FQ - FR;
 	float RQ = FMath::RoundToFloat(FQ);

@@ -9,10 +9,11 @@ namespace
 
 constexpr float RootThree = 1.7320508f;
 
+// Pointy-top layout, matching the in-game board.
 void HexToXY(const rk::Hex& H, float Size, float& X, float& Y)
 {
-	X = 1.5f * Size * H.Q;
-	Y = RootThree * Size * (H.R + H.Q * 0.5f);
+	X = RootThree * Size * (H.Q + H.R * 0.5f);
+	Y = 1.5f * Size * H.R;
 }
 
 } // namespace
@@ -20,14 +21,16 @@ void HexToXY(const rk::Hex& H, float Size, float& X, float& Y)
 void FRunikBoardRenderer::FillHex(TArray<FColor>& Dst, int32 DstW, int32 DstH,
                                   float CX, float CY, float Size, FColor Color) const
 {
-	// crude filled hex: horizontal spans of a flat-top hexagon
+	// filled pointy-top hexagon: full width for |dy| <= Size/2, then taper
 	const int32 Y0 = FMath::Max(0, static_cast<int32>(CY - Size));
 	const int32 Y1 = FMath::Min(DstH - 1, static_cast<int32>(CY + Size));
 	for (int32 Y = Y0; Y <= Y1; ++Y)
 	{
-		const float DY = FMath::Abs(Y - CY) / Size;
-		if (DY > RootThree * 0.5f) continue;
-		const float HalfW = Size * FMath::Min(1.0f, 1.15f - DY * 0.577f);
+		const float DY = FMath::Abs(Y - CY);
+		if (DY > Size) continue;
+		const float HalfW = (RootThree * 0.5f) * Size *
+			FMath::Min(1.0f, 2.0f * (Size - DY) / Size);
+		if (HalfW <= 0.0f) continue;
 		const int32 X0 = FMath::Max(0, static_cast<int32>(CX - HalfW));
 		const int32 X1 = FMath::Min(DstW - 1, static_cast<int32>(CX + HalfW));
 		for (int32 X = X0; X <= X1; ++X)
@@ -73,8 +76,8 @@ TArray<FColor> FRunikBoardRenderer::Render(const rk::Sim& Sim,
 	const rk::Puzzle& Puzzle = Sim.GetPuzzle();
 	const float HexSize = 22.0f;
 	const int32 Radius = Puzzle.Radius;
-	const int32 PlaneW = static_cast<int32>((Radius * 2 + 2) * 1.5f * HexSize);
-	const int32 PlaneH = static_cast<int32>((Radius * 2 + 2) * RootThree * HexSize);
+	const int32 PlaneW = static_cast<int32>((Radius * 2 + 2) * RootThree * HexSize);
+	const int32 PlaneH = static_cast<int32>((Radius * 2 + 2) * 1.6f * HexSize);
 
 	// Does this machine touch the ethereal plane at all?
 	bool bEthereal = false;
@@ -90,7 +93,7 @@ TArray<FColor> FRunikBoardRenderer::Render(const rk::Sim& Sim,
 	OutW = bEthereal ? PlaneW * 2 + 8 : PlaneW;
 	OutH = PlaneH;
 	TArray<FColor> Pixels;
-	Pixels.Init(FColor(16, 16, 20, 255), OutW * OutH);
+	Pixels.Init(FColor(0, 0, 0, 255), OutW * OutH);
 
 	const int32 PlaneCount = bEthereal ? 2 : 1;
 	for (int32 PlaneIdx = 0; PlaneIdx < PlaneCount; ++PlaneIdx)
@@ -159,7 +162,7 @@ TArray<FColor> FRunikBoardRenderer::Render(const rk::Sim& Sim,
 					: FLinearColor(0.35f, 0.75f, 1.0f, 1.0f);
 				Blit(Pixels, OutW, OutH,
 				     FRunikAssets::RuneSpriteName(static_cast<int32>(E.Rune)),
-				     OffX + X, OffY + Y, HexSize * 0.8f, Glow);
+				     OffX + X, OffY + Y, HexSize * 0.53f, Glow);
 			}
 		}
 	}

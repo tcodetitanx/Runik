@@ -91,7 +91,7 @@ enum class ERune : uint8_t
 	Orbit,   // Raidho:   adjacent units rotate around the rune each tick.
 	         //           Sunwise (CW) on Material, widdershins (CCW) on Ethereal.
 	Push,    // Thurisaz: adjacent units move one hex directly away.
-	Pull,    // Nauthiz:  first unit within 3 hexes on each axis moves one hex
+	Pull,    // Laguz:    first unit within 3 hexes on each axis moves one hex
 	         //           closer; a unit already adjacent is held in place.
 	Fuse,    // Gebo:     after movement, adjacent entities that touch each
 	         //           other are bonded into one compound.
@@ -123,7 +123,7 @@ inline const char* RuneName(ERune R)
 	{
 	case ERune::Orbit:  return "Orbit (Raidho)";
 	case ERune::Push:   return "Push (Thurisaz)";
-	case ERune::Pull:   return "Pull (Nauthiz)";
+	case ERune::Pull:   return "Pull (Laguz)";
 	case ERune::Fuse:   return "Fuse (Gebo)";
 	case ERune::Detach: return "Detach (Kenaz)";
 	case ERune::Shift:  return "Shift (Dagaz)";

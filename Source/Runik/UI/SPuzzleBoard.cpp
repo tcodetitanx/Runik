@@ -373,37 +373,32 @@ int32 SPuzzleBoard::FindPlacementAt(const rk::Hex& H, rk::EPlane Plane) const
 float SPuzzleBoard::BoardHexSize(const FGeometry& Geometry) const
 {
 	const FVector2D Size = Geometry.GetLocalSize();
-	const float AvailW = (Size.X - SidePanelWidth) * 0.5f - 24.0f;
+	const float AvailW = Size.X - SidePanelWidth - 40.0f;
 	const float AvailH = Size.Y - BottomBarHeight - TopMargin - 16.0f;
 	const float Cells = Puzzle->Radius * 2.0f + 2.0f;
-	return FMath::Max(6.0f, FMath::Min(AvailW / (Cells * 1.5f),
-	                                   AvailH / (Cells * RootThree)));
+	// pointy-top: a column of tiles advances 1.5*Size, a row RootThree*Size
+	return FMath::Max(6.0f, FMath::Min(AvailW / (Cells * RootThree),
+	                                   AvailH / (Cells * 1.5f)));
 }
 
-FVector2D SPuzzleBoard::PlaneOrigin(int32 PlaneIdx, const FGeometry& Geometry) const
+FVector2D SPuzzleBoard::BoardOrigin(const FGeometry& Geometry) const
 {
 	const FVector2D Size = Geometry.GetLocalSize();
-	const float BoardW = (Size.X - SidePanelWidth) * 0.5f;
-	const float CenterY = TopMargin +
-		(Size.Y - BottomBarHeight - TopMargin) * 0.5f;
-	return FVector2D(SidePanelWidth + BoardW * (0.5f + PlaneIdx), CenterY);
+	return FVector2D(SidePanelWidth + (Size.X - SidePanelWidth) * 0.5f,
+	                 TopMargin + (Size.Y - BottomBarHeight - TopMargin) * 0.5f);
 }
 
 bool SPuzzleBoard::LocateHex(const FGeometry& Geometry, const FVector2D& Local,
                              rk::Hex& OutHex, rk::EPlane& OutPlane) const
 {
 	const float HexSize = BoardHexSize(Geometry);
-	for (int32 PlaneIdx = 0; PlaneIdx < 2; ++PlaneIdx)
+	int32 Q, R;
+	RunikStyle::PixelToHex(Local - BoardOrigin(Geometry), HexSize, Q, R);
+	if (rk::HexLen(rk::Hex(Q, R)) <= Puzzle->Radius)
 	{
-		const FVector2D Origin = PlaneOrigin(PlaneIdx, Geometry);
-		int32 Q, R;
-		RunikStyle::PixelToHex(Local - Origin, HexSize, Q, R);
-		if (rk::HexLen(rk::Hex(Q, R)) <= Puzzle->Radius)
-		{
-			OutHex = rk::Hex(Q, R);
-			OutPlane = PlaneIdx == 0 ? rk::EPlane::Material : rk::EPlane::Ethereal;
-			return true;
-		}
+		OutHex = rk::Hex(Q, R);
+		OutPlane = CurrentPlane; // only the visible plane is interactive
+		return true;
 	}
 	return false;
 }
@@ -551,153 +546,151 @@ int32 SPuzzleBoard::OnPaint(const FPaintArgs& Args, const FGeometry& Geometry,
 	const float LerpAlpha = (Mode == EMode::Run)
 		? FMath::Clamp(TimeSinceStep / Interval, 0.0f, 1.0f) : 1.0f;
 
-	auto DrawSprite = [&](FName Sprite, const FVector2D& Center, float Radius,
+	// Aspect-preserving sprite draw: Width is the on-screen width, height
+	// follows the sprite's own proportions, centered on the hex center.
+	auto DrawSprite = [&](FName Sprite, const FVector2D& Center, float Width,
 	                      const FLinearColor& Tint, int32 Layer)
 	{
-		if (const FSlateBrush* Brush = GI->Assets.GetBrush(Sprite))
-		{
-			FSlateDrawElement::MakeBox(Out, Layer,
-				Geometry.ToPaintGeometry(
-					FVector2f(Radius * 2.0f, Radius * 2.0f),
-					FSlateLayoutTransform(
-						FVector2f(Center - FVector2D(Radius, Radius)))),
-				Brush, ESlateDrawEffect::None, Tint);
-		}
+		const FRunikSprite* S = GI->Assets.Get(Sprite);
+		if (!S || S->Width <= 0) return;
+		const float H = Width * static_cast<float>(S->Height) / S->Width;
+		FSlateDrawElement::MakeBox(Out, Layer,
+			Geometry.ToPaintGeometry(
+				FVector2f(Width, H),
+				FSlateLayoutTransform(
+					FVector2f(Center - FVector2D(Width * 0.5f, H * 0.5f)))),
+			&S->Brush, ESlateDrawEffect::None, Tint);
 	};
 
-	for (int32 PlaneIdx = 0; PlaneIdx < 2; ++PlaneIdx)
+	// Only one plane is visible at a time; Tab / the plane button crosses over.
+	const rk::EPlane Plane = CurrentPlane;
+	const FVector2D Origin = BoardOrigin(Geometry);
+	const float TileW = HexSize * RootThree; // pointy-top tile width
+	const float RuneW = TileW * 0.72f * 0.66f;
+
+	// plane label
 	{
-		const rk::EPlane Plane = PlaneIdx == 0 ? rk::EPlane::Material
-		                                       : rk::EPlane::Ethereal;
-		const FVector2D Origin = PlaneOrigin(PlaneIdx, Geometry);
-		const bool bActivePlane = (Mode != EMode::Edit) || Plane == CurrentPlane;
+		const FString LabelText = Plane == rk::EPlane::Material
+			? TEXT("M A T E R I A L   -   sunwise          [Tab] cross the veil")
+			: TEXT("E T H E R E A L   -   widdershins          [Tab] cross the veil");
+		FSlateDrawElement::MakeText(Out, LayerId,
+			Geometry.ToPaintGeometry(FVector2f(600, 24),
+				FSlateLayoutTransform(FVector2f(Origin.X - 220.0f, 12.0f))),
+			LabelText, Font(13, true), ESlateDrawEffect::None, PlaneGlow(Plane));
+	}
 
-		// plane label
+	// board tiles
+	for (int32 Q = -Puzzle->Radius; Q <= Puzzle->Radius; ++Q)
+	{
+		for (int32 R = -Puzzle->Radius; R <= Puzzle->Radius; ++R)
 		{
-			const FString LabelText = Plane == rk::EPlane::Material
-				? TEXT("M A T E R I A L   -   sunwise")
-				: TEXT("E T H E R E A L   -   widdershins");
-			FSlateDrawElement::MakeText(Out, LayerId,
-				Geometry.ToPaintGeometry(FVector2f(400, 24),
-					FSlateLayoutTransform(FVector2f(
-						Origin.X - 120.0f, 12.0f))),
-				LabelText, Font(13, true), ESlateDrawEffect::None,
-				PlaneGlow(Plane) * (bActivePlane ? 1.0f : 0.45f));
+			if (rk::HexLen(rk::Hex(Q, R)) > Puzzle->Radius) continue;
+			const FVector2D C = Origin + RunikStyle::HexToPixel(Q, R, HexSize);
+			DrawSprite(TEXT("hex_base"), C, TileW * 1.01f,
+				Plane == rk::EPlane::Material
+					? FLinearColor(1, 1, 1, 1)
+					: FLinearColor(0.75f, 0.85f, 1.1f, 1.0f),
+				LayerId);
 		}
+	}
+	++LayerId;
 
-		// board tiles
-		for (int32 Q = -Puzzle->Radius; Q <= Puzzle->Radius; ++Q)
+	// spawners (ghost gems)
+	for (const rk::Spawner& S : Puzzle->Spawners)
+	{
+		if (S.Plane != Plane) continue;
+		for (const rk::SpawnCell& Cell : S.Cells)
 		{
-			for (int32 R = -Puzzle->Radius; R <= Puzzle->Radius; ++R)
-			{
-				if (rk::HexLen(rk::Hex(Q, R)) > Puzzle->Radius) continue;
-				const FVector2D C = Origin + RunikStyle::HexToPixel(Q, R, HexSize);
-				DrawSprite(TEXT("hex_base"), C, HexSize * 1.02f,
-					Plane == rk::EPlane::Material
-						? FLinearColor(1, 1, 1, 1)
-						: FLinearColor(0.75f, 0.85f, 1.1f, 1.0f),
-					LayerId);
-			}
+			const rk::Hex H = S.Pos + Cell.Offset;
+			const FVector2D C = Origin + RunikStyle::HexToPixel(H.Q, H.R, HexSize);
+			DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(Cell.Gem)),
+				C, TileW * 0.8f, FLinearColor(1, 1, 1, 0.22f), LayerId);
 		}
-		++LayerId;
-
-		// spawners (ghost gems)
-		for (const rk::Spawner& S : Puzzle->Spawners)
-		{
-			if (S.Plane != Plane) continue;
-			for (const rk::SpawnCell& Cell : S.Cells)
-			{
-				const rk::Hex H = S.Pos + Cell.Offset;
-				const FVector2D C = Origin + RunikStyle::HexToPixel(H.Q, H.R, HexSize);
-				DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(Cell.Gem)),
-					C, HexSize * 0.8f, FLinearColor(1, 1, 1, 0.22f), LayerId);
-			}
-		}
-		// output zones (ghost gems, green ring tint)
-		for (const rk::OutputZone& Z : Puzzle->Outputs)
-		{
-			if (Z.Plane != Plane) continue;
-			for (const rk::OutputCell& Cell : Z.Cells)
-			{
-				const FVector2D C = Origin +
-					RunikStyle::HexToPixel(Cell.Pos.Q, Cell.Pos.R, HexSize);
-				DrawSprite(TEXT("hex_base"), C, HexSize * 0.95f,
-					FLinearColor(0.5f, 1.0f, 0.55f, 0.30f), LayerId);
-				DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(Cell.Gem)),
-					C, HexSize * 0.8f, FLinearColor(0.7f, 1.0f, 0.7f, 0.35f), LayerId);
-			}
-		}
-		++LayerId;
-
-		// bonds
-		{
-			TArray<FVector2f> Line;
-			for (const auto& Bond : Sim.GetBonds())
-			{
-				const std::vector<rk::Entity>& Ents = Sim.GetEntities();
-				const rk::Entity& A = Ents[Bond.first];
-				const rk::Entity& B = Ents[Bond.second];
-				if (!A.bAlive || !B.bAlive || A.Plane != Plane) continue;
-				Line.Reset();
-				Line.Add(FVector2f(Origin + RunikStyle::HexToPixel(A.Pos.Q, A.Pos.R, HexSize)));
-				Line.Add(FVector2f(Origin + RunikStyle::HexToPixel(B.Pos.Q, B.Pos.R, HexSize)));
-				FSlateDrawElement::MakeLines(Out, LayerId,
-					Geometry.ToPaintGeometry(), Line, ESlateDrawEffect::None,
-					FLinearColor(0.95f, 0.9f, 0.75f, 0.7f), true, HexSize * 0.18f);
-			}
-		}
-		++LayerId;
-
-		// entities
-		for (const rk::Entity& E : Sim.GetEntities())
-		{
-			if (!E.bAlive || E.Plane != Plane) continue;
-			FVector2D Pos = RunikStyle::HexToPixel(E.Pos.Q, E.Pos.R, HexSize);
-			if (const TPair<rk::Hex, rk::Hex>* Move = Anim.Find(E.Id))
-			{
-				const FVector2D From =
-					RunikStyle::HexToPixel(Move->Key.Q, Move->Key.R, HexSize);
-				const FVector2D To =
-					RunikStyle::HexToPixel(Move->Value.Q, Move->Value.R, HexSize);
-				Pos = FMath::Lerp(From, To, FMath::SmoothStep(0.0f, 1.0f, LerpAlpha));
-			}
-			const FVector2D C = Origin + Pos;
-			if (E.Kind == rk::EKind::Gem)
-			{
-				DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(E.Gem)),
-					C, HexSize * 0.86f,
-					E.bStatic ? FLinearColor(0.5f, 0.5f, 0.55f, 1.0f)
-					          : FLinearColor::White, LayerId);
-			}
-			else
-			{
-				const FLinearColor Glow = PlaneGlow(E.Plane);
-				DrawSprite(FRunikAssets::RuneSpriteName(static_cast<int32>(E.Rune)),
-					C, HexSize * 0.72f, Glow, LayerId);
-				// rank digit
-				FSlateDrawElement::MakeText(Out, LayerId + 1,
-					Geometry.ToPaintGeometry(FVector2f(24, 16),
-						FSlateLayoutTransform(FVector2f(
-							C + FVector2D(HexSize * 0.32f, HexSize * 0.38f)))),
-					FString::FromInt(E.Priority), Font(11, true),
-					ESlateDrawEffect::None,
-					E.bStatic ? Dim : Glow);
-			}
-		}
-		LayerId += 2;
-
-		// hover ghost
-		if (bHover && Mode == EMode::Edit && HoverPlane == Plane)
+	}
+	// output zones (ghost gems, green tint)
+	for (const rk::OutputZone& Z : Puzzle->Outputs)
+	{
+		if (Z.Plane != Plane) continue;
+		for (const rk::OutputCell& Cell : Z.Cells)
 		{
 			const FVector2D C = Origin +
-				RunikStyle::HexToPixel(HoverHex.Q, HoverHex.R, HexSize);
-			const bool bOk = CanPlaceAt(HoverHex, HoverPlane) && RuneAllowed(SelectedRune);
-			DrawSprite(FRunikAssets::RuneSpriteName(static_cast<int32>(SelectedRune)),
-				C, HexSize * 0.72f,
-				(bOk ? PlaneGlow(Plane) : Danger).CopyWithNewOpacity(0.5f), LayerId);
+				RunikStyle::HexToPixel(Cell.Pos.Q, Cell.Pos.R, HexSize);
+			DrawSprite(TEXT("hex_base"), C, TileW * 0.95f,
+				FLinearColor(0.5f, 1.0f, 0.55f, 0.30f), LayerId);
+			DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(Cell.Gem)),
+				C, TileW * 0.8f, FLinearColor(0.7f, 1.0f, 0.7f, 0.35f), LayerId);
 		}
-		++LayerId;
 	}
+	++LayerId;
+
+	// bonds
+	{
+		TArray<FVector2f> Line;
+		for (const auto& Bond : Sim.GetBonds())
+		{
+			const std::vector<rk::Entity>& Ents = Sim.GetEntities();
+			const rk::Entity& A = Ents[Bond.first];
+			const rk::Entity& B = Ents[Bond.second];
+			if (!A.bAlive || !B.bAlive || A.Plane != Plane) continue;
+			Line.Reset();
+			Line.Add(FVector2f(Origin + RunikStyle::HexToPixel(A.Pos.Q, A.Pos.R, HexSize)));
+			Line.Add(FVector2f(Origin + RunikStyle::HexToPixel(B.Pos.Q, B.Pos.R, HexSize)));
+			FSlateDrawElement::MakeLines(Out, LayerId,
+				Geometry.ToPaintGeometry(), Line, ESlateDrawEffect::None,
+				FLinearColor(0.95f, 0.9f, 0.75f, 0.7f), true, HexSize * 0.18f);
+		}
+	}
+	++LayerId;
+
+	// entities
+	for (const rk::Entity& E : Sim.GetEntities())
+	{
+		if (!E.bAlive || E.Plane != Plane) continue;
+		FVector2D Pos = RunikStyle::HexToPixel(E.Pos.Q, E.Pos.R, HexSize);
+		if (const TPair<rk::Hex, rk::Hex>* Move = Anim.Find(E.Id))
+		{
+			const FVector2D From =
+				RunikStyle::HexToPixel(Move->Key.Q, Move->Key.R, HexSize);
+			const FVector2D To =
+				RunikStyle::HexToPixel(Move->Value.Q, Move->Value.R, HexSize);
+			Pos = FMath::Lerp(From, To, FMath::SmoothStep(0.0f, 1.0f, LerpAlpha));
+		}
+		const FVector2D C = Origin + Pos;
+		if (E.Kind == rk::EKind::Gem)
+		{
+			DrawSprite(FRunikAssets::GemSpriteName(static_cast<int32>(E.Gem)),
+				C, TileW * 0.84f,
+				E.bStatic ? FLinearColor(0.5f, 0.5f, 0.55f, 1.0f)
+				          : FLinearColor::White, LayerId);
+		}
+		else
+		{
+			const FLinearColor Glow = PlaneGlow(E.Plane);
+			DrawSprite(FRunikAssets::RuneSpriteName(static_cast<int32>(E.Rune)),
+				C, RuneW, Glow, LayerId);
+			// rank digit
+			FSlateDrawElement::MakeText(Out, LayerId + 1,
+				Geometry.ToPaintGeometry(FVector2f(24, 16),
+					FSlateLayoutTransform(FVector2f(
+						C + FVector2D(HexSize * 0.34f, HexSize * 0.30f)))),
+				FString::FromInt(E.Priority), Font(11, true),
+				ESlateDrawEffect::None,
+				E.bStatic ? Dim : Glow);
+		}
+	}
+	LayerId += 2;
+
+	// hover ghost
+	if (bHover && Mode == EMode::Edit && HoverPlane == Plane)
+	{
+		const FVector2D C = Origin +
+			RunikStyle::HexToPixel(HoverHex.Q, HoverHex.R, HexSize);
+		const bool bOk = CanPlaceAt(HoverHex, HoverPlane) && RuneAllowed(SelectedRune);
+		DrawSprite(FRunikAssets::RuneSpriteName(static_cast<int32>(SelectedRune)),
+			C, RuneW,
+			(bOk ? PlaneGlow(Plane) : Danger).CopyWithNewOpacity(0.5f), LayerId);
+	}
+	++LayerId;
 
 	return SCompoundWidget::OnPaint(Args, Geometry, MyCullingRect, Out,
 	                                LayerId + 1, InWidgetStyle, bParentEnabled);

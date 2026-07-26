@@ -14,7 +14,7 @@ SIZE = 256
 # Chosen from Elder Futhark by meaning:
 #   Orbit      = Raidho   (r, "ride/journey")
 #   Push       = Thurisaz (th, "giant/directed force")
-#   Pull       = Nauthiz  (n, "need/constraint")
+#   Pull       = Laguz    (l, "water/lake - that which draws all things")
 #   Fuse       = Gebo     (g, "gift/union")
 #   Detach     = Kenaz    (k, "torch/opening")
 #   RealmShift = Dagaz    (d, "day/transformation between states")
@@ -28,9 +28,9 @@ GLYPHS = {
         [(0.35, 0.08), (0.35, 0.92)],
         [(0.35, 0.30), (0.72, 0.50), (0.35, 0.70)],
     ],
-    "rune_pull": [  # Nauthiz
-        [(0.50, 0.08), (0.50, 0.92)],
-        [(0.28, 0.34), (0.72, 0.58)],
+    "rune_pull": [  # Laguz
+        [(0.40, 0.08), (0.40, 0.92)],
+        [(0.40, 0.08), (0.70, 0.44)],
     ],
     "rune_fuse": [  # Gebo
         [(0.22, 0.18), (0.78, 0.82)],

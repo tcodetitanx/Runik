@@ -80,9 +80,9 @@ private:
 	bool CanPlaceAt(const rk::Hex& H, rk::EPlane Plane) const;
 	int32 FindPlacementAt(const rk::Hex& H, rk::EPlane Plane) const;
 
-	// ---- geometry
+	// ---- geometry (single visible plane; CurrentPlane is the one shown)
 	float BoardHexSize(const FGeometry& Geometry) const;
-	FVector2D PlaneOrigin(int32 PlaneIdx, const FGeometry& Geometry) const;
+	FVector2D BoardOrigin(const FGeometry& Geometry) const;
 	bool LocateHex(const FGeometry& Geometry, const FVector2D& Local,
 	               rk::Hex& OutHex, rk::EPlane& OutPlane) const;
 

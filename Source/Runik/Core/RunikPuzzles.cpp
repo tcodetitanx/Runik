@@ -83,10 +83,11 @@ const std::vector<Puzzle>& GetPuzzles()
 	{
 		Puzzle P = Make("c1p1", "The First Stone", 0, 3, 3,
 			RuneBit(ERune::Pull),
-			"Deliver 3 rubies to the collector. Nauthiz, the rune of need, "
+			"Deliver 3 rubies to the collector. Laguz, the water-rune, "
 			"draws stones along its six axes and holds fast what stands beside it.",
 			"The training hall's smallest board. Chalk dust, and your master's "
-			"empty chair. Begin as every runewright begins: with need.");
+			"empty chair. Begin as every runewright begins: with water, "
+			"which draws all things to itself.");
 		P.Spawners.push_back(Spawner::Single(Hex(-2, 0), EGem::Ruby));
 		P.Outputs.push_back(Zone1(0, 0, EGem::Ruby));
 		P.ParCost = 15; P.ParTicks = 8; P.ParRunes = 1;
@@ -95,7 +96,7 @@ const std::vector<Puzzle>& GetPuzzles()
 	{
 		Puzzle P = Make("c1p2", "The Ward", 0, 3, 3,
 			RuneBit(ERune::Pull) | RuneBit(ERune::Push),
-			"The collector stands off the axis of need. Thurisaz, the thorn, "
+			"The collector stands off the water-rune's axes. Thurisaz, the thorn, "
 			"drives away all that stands beside it - and the greater rank "
 			"speaks over the lesser.",
 			"'Pull alone makes a hoard,' Alviss wrote. 'Push alone makes an "
@@ -182,7 +183,7 @@ const std::vector<Puzzle>& GetPuzzles()
 	{
 		Puzzle P = Make("c3p2", "Mend the Wheel", 2, 4, 3,
 			RuneBit(ERune::Pull),
-			"A rune of need has been knocked out of its socket - two hexes "
+			"A water-rune has been knocked out of its socket - two hexes "
 			"north of where the old machine needs it. A rune may move a "
 			"rune: drag it home with a greater voice.",
 			"Frost heave, or sabotage? The journal only says: 'What the "
@@ -243,7 +244,7 @@ const std::vector<Puzzle>& GetPuzzles()
 	{
 		Puzzle P = Make("c4p3", "The Third Shard", 3, 4, 3,
 			RuneBit(ERune::Pull) | RuneBit(ERune::Fuse),
-			"Three streams meet at one rune of need. Two gifts bind them "
+			"Three streams meet at one water-rune. Two gifts bind them "
 			"into an arc of three. Deliver 3 completed arcs.",
 			"Ruby for the hearth, citrine for the harvest, peridot for the "
 			"spring. The old year-blessing, in stone.");
